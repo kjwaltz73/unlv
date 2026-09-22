@@ -33,6 +33,8 @@ def _below_thousand(n: int) -> str:
 
 
 def number_to_words(n: int) -> str:
+    if n < 0:
+        raise ValueError("n must be non-negative")
     if n > 1_000_000:
         return "Too high"
     if n == 1_000_000:
