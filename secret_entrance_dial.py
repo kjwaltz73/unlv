@@ -17,18 +17,26 @@ e.g. "L68, L30, R48, L5, R60, L55, L1, L99, R14, L82".
 
 import os
 import sys
+import urllib.error
 import urllib.request
 
 DIAL_SIZE = 100
 START_POSITION = 50
+REQUEST_TIMEOUT_SECONDS = 10
 
 
 def fetch_rotations(url: str) -> list[str]:
     session = os.environ.get("AOC_SESSION")
     headers = {"Cookie": f"session={session}"} if session else {}
     request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request) as response:
-        text = response.read().decode("utf-8")
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            text = response.read().decode("utf-8")
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(
+            f"Failed to fetch puzzle input ({error.code} {error.reason}). "
+            "Check that AOC_SESSION is set to a current, valid session cookie."
+        ) from error
     return [token.strip() for token in text.replace(",", "\n").splitlines() if token.strip()]
 
 
@@ -37,6 +45,8 @@ def compute_password(rotations: list[str]) -> int:
     password = 0
     for rotation in rotations:
         direction, distance = rotation[0], int(rotation[1:])
+        if distance < 0:
+            raise ValueError(f"Distance must be non-negative in rotation: {rotation!r}")
         if direction == "L":
             position = (position - distance) % DIAL_SIZE
         elif direction == "R":
